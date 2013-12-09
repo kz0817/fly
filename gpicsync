@@ -3,17 +3,21 @@
 import gdata.photos.service
 import argparse
 
-parser = argparse.ArgumentParser(description='Synchronize pictures with Picsa.')
-parser.add_argument('userid', type=str)
-parser.add_argument('password', type=str)
-args = parser.parse_args()
-print "User: %s, Password: %s" % (args.userid, args.password)
+def start():
+  parser = argparse.ArgumentParser(description='Synchronize pictures with Picsa.')
+  parser.add_argument('userid', type=str)
+  parser.add_argument('password', type=str)
+  args = parser.parse_args()
+  print "User: %s, Password: %s" % (args.userid, args.password)
 
-client = gdata.photos.service.PhotosService()
-client.ClientLogin(args.userid, args.password)
+  client = gdata.photos.service.PhotosService()
+  client.ClientLogin(args.userid, args.password)
 
-albums = client.GetUserFeed()
-for album in albums.entry:
-  photos = client.GetFeed('/data/feed/api/user/%s/albumid/%s?kind=photo' % (args.userid, album.gphoto_id.text))
-  for photo in photos.entry:
-    print photo
+  albums = client.GetUserFeed()
+  for album in albums.entry:
+    photos = client.GetFeed('/data/feed/api/user/%s/albumid/%s?kind=photo' % (args.userid, album.gphoto_id.text))
+    for photo in photos.entry:
+      print photo
+
+if __name__ == '__main__':
+  start()
