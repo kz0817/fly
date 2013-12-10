@@ -2,13 +2,27 @@
 
 import gdata.photos.service
 import argparse
+import Image
+import sys
+
+def parse_exif(path):
+  print path
+  im = Image.open(path)
+  exif = im._getexif()
+  print exif.__class__
 
 def start():
   parser = argparse.ArgumentParser(description='Synchronize pictures with Picsa.')
   parser.add_argument('userid', type=str)
   parser.add_argument('password', type=str)
+  parser.add_argument('file', nargs='+', type=str)
   args = parser.parse_args()
   print "User: %s, Password: %s" % (args.userid, args.password)
+
+  file_info = []
+  for path in args.file:
+    file_info.append(parse_exif(path))
+  sys.exit(1) # temporary
 
   client = gdata.photos.service.PhotosService()
   client.ClientLogin(args.userid, args.password)

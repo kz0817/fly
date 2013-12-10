@@ -1,3 +1,6 @@
 The manual:
 https://developers.google.com/picasa-web/?hl=ja
 https://developers.google.com/gdata/articles/python_client_lib?hl=ja
+
+* How to install PIL
+easy_install PIL
