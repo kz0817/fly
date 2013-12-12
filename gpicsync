@@ -3,6 +3,7 @@
 import argparse
 import sys
 import os.path
+import time
 import gdata.photos.service
 import Image
 
@@ -38,6 +39,12 @@ def parse_exif(path):
   else:
     raise 'Not found %s in EXIF: %s' % \
           (EXIF_TAG_NAME[EXIF_TAG_DATE_TIME_ORIGINAL], info['base_name'])
+
+  # unix time
+  struct_time = time.strptime(info[EXIF_TAG_NAME[EXIF_TAG_DATE_TIME_ORIGINAL]],
+                              '%Y:%m:%d %H:%M:%S')
+  info['time'] = int(time.mktime(struct_time))
+
   return info
 
 def start():
@@ -53,16 +60,23 @@ def start():
     info = parse_exif(path)
     print info
     file_info.append(info)
-  sys.exit(1) # temporary
 
   client = gdata.photos.service.PhotosService()
   client.ClientLogin(args.userid, args.password)
 
   albums = client.GetUserFeed()
   for album in albums.entry:
-    photos = client.GetFeed('/data/feed/api/user/%s/albumid/%s?kind=photo' % (args.userid, album.gphoto_id.text))
+    photos = client.GetFeed('/data/feed/api/user/%s/albumid/%s?kind=photo' % \
+                            (args.userid, album.gphoto_id.text))
     for photo in photos.entry:
-      print photo
+      title = photo.title.text
+      time = photo.exif.time
+      if not time:
+        continue;
+      time = time.text
+      gphoto_id = photo.gphoto_id.text
+      (name_body, serial) = extract_base_name(title)
+      print gphoto_id, title, name_body, time
 
 if __name__ == '__main__':
   start()
