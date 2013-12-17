@@ -27,7 +27,7 @@ def extract_base_name(path):
   return (name_body, serial)
 
 def parse_exif(path):
-  info = {}
+  info = {'path':path}
   (info['name_body'], info['serial']) = extract_base_name(path)
 
   im = Image.open(path)
@@ -47,7 +47,13 @@ def parse_exif(path):
 
   return info
 
+def make_file_info_key(name_body, time):
+  return "%s-%d" % (name_body, time)
+
 def start():
+  global time
+  tz_offset = -time.timezone
+
   parser = argparse.ArgumentParser(description='Synchronize pictures with Picsa.')
   parser.add_argument('userid', type=str)
   parser.add_argument('password', type=str)
@@ -55,11 +61,15 @@ def start():
   args = parser.parse_args()
   print "User: %s, Password: %s" % (args.userid, args.password)
 
-  file_info = []
+  file_info = {}
   for path in args.file:
     info = parse_exif(path)
-    print info
-    file_info.append(info)
+    key = make_file_info_key(info['name_body'], info['time'])
+    print key,info
+    if key in file_info:
+      print "WARN: Duplicated key: '%s'. Ignored" % key
+      continue
+    file_info[key] = info
 
   client = gdata.photos.service.PhotosService()
   client.ClientLogin(args.userid, args.password)
@@ -73,10 +83,21 @@ def start():
       time = photo.exif.time
       if not time:
         continue;
-      time = time.text
+      time = int(time.text)/1000 # ms -> sec
+      time -= tz_offset
       gphoto_id = photo.gphoto_id.text
       (name_body, serial) = extract_base_name(title)
-      print gphoto_id, title, name_body, time
+      key = make_file_info_key(name_body, time)
+      print key, gphoto_id, title, name_body, time
+      if key not in file_info:
+        continue
+      print "=> matched"
+      finfo = file_info[key]
+      client.UpdatePhotoBlob(photo, finfo['path'], 'image/jpeg')
+      print "=> updated"
+      del file_info[key]
+      if len(file_info) == 0:
+        sys.exit(0)
 
 if __name__ == '__main__':
   start()
